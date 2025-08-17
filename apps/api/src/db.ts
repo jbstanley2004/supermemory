@@ -16,13 +16,13 @@ export async function getDb(env: Env): Promise<Queryable> {
   // Prefer Cloudflare Hyperdrive binding when available
   const hyper = (env as any).HYPERDRIVE as unknown;
   if (hyper) {
-    const { connect } = await import('cloudflare:hyperdrive');
+    // Use the Hyperdrive runtime Postgres client
+    const { connect } = await import('cloudflare:postgres');
     const client: any = connect(hyper as any);
     cached = {
       async query(text: string, params: any[] = []) {
-        // client.query(text, params) is supported by Hyperdrive
         const res = await client.query(text, params);
-        return { rows: res.rows ?? res }; // normalize
+        return { rows: res.rows ?? res };
       }
     };
     return cached;
