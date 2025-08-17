@@ -1,0 +1,45 @@
+name = "supermemory-api"
+main = "src/index.ts"
+compatibility_date = "2024-12-30"
+compatibility_flags = ["nodejs_compat"]
+
+[env.production]
+name = "supermemory-api-production"
+
+# Hyperdrive configuration for PostgreSQL
+[[hyperdrive]]
+binding = "DB"
+id = "HYPERDRIVE_ID_PLACEHOLDER"
+
+# AI binding for embeddings
+[ai]
+binding = "AI"
+
+# KV namespace for caching
+[[kv_namespaces]]
+binding = "KV"
+id = "KV_NAMESPACE_ID_PLACEHOLDER"
+
+# R2 bucket for file storage
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "supermemory-files"
+
+# Vectorize for vector search
+[[vectorize]]
+binding = "VECTORIZE"
+index_name = "supermemory-vectors"
+
+# Environment variables (set these in dashboard or via wrangler secret)
+[vars]
+NODE_ENV = "production"
+BETTER_AUTH_URL = "https://api-supermemory.terragon.workers.dev"
+
+# Secrets to be set via wrangler secret
+# wrangler secret put DATABASE_URL
+# wrangler secret put BETTER_AUTH_SECRET
+# wrangler secret put OPENAI_API_KEY
+# wrangler secret put RESEND_API_KEY
+# wrangler secret put ANTHROPIC_API_KEY
+# wrangler secret put GEMINI_API_KEY
+# wrangler secret put GROQ_API_KEY

@@ -1,0 +1,24 @@
+{
+  "extends": "@total-typescript/tsconfig/web",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "types": ["@cloudflare/workers-types"],
+    "noEmit": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "jsx": "react-jsx",
+    "allowJs": true,
+    "paths": {
+      "@/*": ["./src/*"],
+      "@repo/validation": ["../../packages/validation"],
+      "@repo/lib": ["../../packages/lib"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
