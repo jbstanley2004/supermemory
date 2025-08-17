@@ -1,0 +1,21 @@
+{
+  "name": "supermemory-api",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "cf-typegen": "wrangler types --env-interface Env src/cloudflare-env.d.ts"
+  },
+  "dependencies": {
+    "agents": "^0.2.7",
+    "ai": "^4.3.19",
+    "@ai-sdk/openai": "^1.3.23"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "wrangler": "^4.26.0"
+  }
+}
+
