@@ -22,8 +22,9 @@ Environment (Wrangler vars/secrets)
 - `OPENAI_BASE_URL` (var): optional AI Gateway base, e.g. `https://gateway.ai.cloudflare.com/v1/<ACCOUNT>/<GATEWAY>/openai`
 - `OPENAI_MODEL` (var): default `gpt-4o-mini`
 - `OPENAI_EMBEDDING_MODEL` (var): default `text-embedding-3-small`
-- `DATABASE_URL` (secret): Postgres URL (Neon HTTP URL or Hyperdrive Postgres URL)
-- `DB_DRIVER` (var): `auto` (default), `neon`, or `pg`
+- `HYPERDRIVE` (binding, optional): Cloudflare Hyperdrive binding that exposes `env.HYPERDRIVE.connectionString`.
+- `DATABASE_URL` (secret, fallback): Postgres URL (Neon HTTP URL or classic Postgres URL). Used only when no `HYPERDRIVE` binding is configured.
+- `DB_DRIVER` (var, fallback): `auto` (default), `neon`, or `pg`. Only relevant when using `DATABASE_URL`.
 
 Database (Hyperdrive or Neon)
 You can use Cloudflare Hyperdrive with a managed Postgres that has `pgvector` enabled, or use Neon’s HTTP driver directly from Workers.
@@ -33,7 +34,21 @@ You can use Cloudflare Hyperdrive with a managed Postgres that has `pgvector` en
 CREATE EXTENSION IF NOT EXISTS vector;
 ```
 
-2) If using Hyperdrive, create a connection pointing to your DB and set `DATABASE_URL` to the Hyperdrive connection string and `DB_DRIVER=pg`. If using Neon, set `DATABASE_URL` to the Neon HTTP URL and `DB_DRIVER=neon` (or leave `auto`).
+2) Hyperdrive (recommended):
+   - Create a Hyperdrive configuration that points at your Postgres.
+   - In `apps/api/wrangler.jsonc` add a binding with the Hyperdrive configuration ID:
+     ```jsonc
+     {
+       "hyperdrive": [
+         { "binding": "HYPERDRIVE", "id": "<your-hyperdrive-id>" }
+       ]
+     }
+     ```
+   - The Worker will automatically use `env.HYPERDRIVE.connectionString` via the `pg` client with `nodejs_compat`.
+
+   Fallback without Hyperdrive:
+   - Set `DATABASE_URL` to a Neon HTTP URL (preferred in Workers) or a direct Postgres URL.
+   - Optionally set `DB_DRIVER=neon` or `DB_DRIVER=pg` (leave `auto` to let the Worker decide).
 
 3) Deploy – the Worker lazily initializes tables on first request:
 - `memories` (document-level metadata and raw content)
@@ -45,7 +60,8 @@ Deploy
 wrangler login
 cd apps/api
 wrangler secret put OPENAI_API_KEY
-wrangler secret put DATABASE_URL        # Hyperdrive or Neon URL
+# (Optional) Only when not using the Hyperdrive binding:
+# wrangler secret put DATABASE_URL      # Neon HTTP or Postgres URL
 wrangler deploy
 
 # Web (point to your API)
