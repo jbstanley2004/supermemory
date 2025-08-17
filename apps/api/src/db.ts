@@ -1,4 +1,9 @@
-import type { Env } from "./agents/chat";
+// Define a minimal Env shape locally to avoid cross-file type drift
+type DBEnv = {
+  HYPERDRIVE?: { connectionString: string };
+  DATABASE_URL?: string;
+  DB_DRIVER?: string;
+};
 
 // Very small DB abstraction that supports either Neon (HTTP) or pg (TCP via nodejs_compat).
 // Recommended in Workers: Neon HTTP driver (`@neondatabase/serverless`).
@@ -10,7 +15,7 @@ export type Queryable = {
 
 let cached: Queryable | null = null;
 
-export async function getDb(env: Env): Promise<Queryable> {
+export async function getDb(env: DBEnv): Promise<Queryable> {
   if (cached) return cached;
 
   // Prefer Cloudflare Hyperdrive binding when available
@@ -67,7 +72,7 @@ export async function getDb(env: Env): Promise<Queryable> {
   return cached;
 }
 
-export async function ensureSchema(env: Env) {
+export async function ensureSchema(env: DBEnv) {
   const db = await getDb(env);
   // Enable extensions and create tables if not exist
   await db.query(`

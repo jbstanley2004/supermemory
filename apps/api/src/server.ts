@@ -10,6 +10,8 @@ export type Env = {
   OPENAI_EMBEDDING_MODEL?: string;
   DATABASE_URL?: string;
   DB_DRIVER?: string;
+  // Cloudflare Hyperdrive binding (if configured via wrangler.jsonc)
+  HYPERDRIVE?: { connectionString: string };
 };
 
 function withCORS(res: Response, req: Request): Response {
