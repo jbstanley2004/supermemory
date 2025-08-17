@@ -6,20 +6,13 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
-  "durable_objects": {
-    "bindings": [
-      {
-        "name": "Chat",
-        "class_name": "Chat"
-      }
-    ]
-  },
-  "migrations": [
+  "hyperdrive": [
     {
-      "tag": "v1",
-      "new_sqlite_classes": ["Chat"]
+      "binding": "HYPERDRIVE",
+      "id": "4921159684bb488a99d7870706883eab"
     }
   ],
+  
 
   "vars": {
     "OPENAI_MODEL": "gpt-5-mini",

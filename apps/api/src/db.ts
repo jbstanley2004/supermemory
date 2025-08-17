@@ -13,6 +13,21 @@ let cached: Queryable | null = null;
 export async function getDb(env: Env): Promise<Queryable> {
   if (cached) return cached;
 
+  // Prefer Cloudflare Hyperdrive binding when available
+  const hyper = (env as any).HYPERDRIVE as unknown;
+  if (hyper) {
+    const { connect } = await import('cloudflare:hyperdrive');
+    const client: any = connect(hyper as any);
+    cached = {
+      async query(text: string, params: any[] = []) {
+        // client.query(text, params) is supported by Hyperdrive
+        const res = await client.query(text, params);
+        return { rows: res.rows ?? res }; // normalize
+      }
+    };
+    return cached;
+  }
+
   const url = (env as any).DATABASE_URL as string | undefined;
   if (!url) throw new Error("DATABASE_URL is not set");
 
