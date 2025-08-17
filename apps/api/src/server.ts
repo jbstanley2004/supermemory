@@ -10,6 +10,8 @@ export type Env = {
   OPENAI_EMBEDDING_MODEL?: string;
   DATABASE_URL?: string;
   DB_DRIVER?: string;
+  // Cloudflare Hyperdrive binding (if configured via wrangler.jsonc)
+  HYPERDRIVE?: { connectionString: string };
 };
 
 function withCORS(res: Response, req: Request): Response {
@@ -28,7 +30,7 @@ export default {
 
     // Ensure DB schema exists lazily (first request)
     try {
-      await ensureSchema(env);
+      await ensureSchema(env, _ctx);
     } catch {}
 
     if (request.method === "OPTIONS") {
@@ -116,7 +118,7 @@ export default {
         const type = /^https?:\/\//.test(content) ? "webpage" : "text";
         const now = new Date().toISOString();
 
-        const db = await getDb(env);
+        const db = await getDb(env, _ctx);
         await db.query(
           `insert into memories (id, custom_id, type, title, summary, metadata, container_tags, content, source, status, created_at, updated_at, url)
            values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
@@ -187,7 +189,7 @@ export default {
     const memIdMatch = url.pathname.match(/^\/v3\/memories\/(.+)$/);
     if (memIdMatch && request.method === "GET") {
       const id = decodeURIComponent(memIdMatch[1]);
-      const db = await getDb(env);
+      const db = await getDb(env, _ctx);
       const rows = await db.query(`select * from memories where id=$1`, [id]);
       const m = rows.rows[0];
       if (!m) return withCORS(new Response("Not found", { status: 404 }), request);
@@ -218,7 +220,7 @@ export default {
       const body = await request.json().catch(() => ({}));
       const { content, customId, metadata, containerTags } = body as any;
       const now = new Date().toISOString();
-      const db = await getDb(env);
+      const db = await getDb(env, _ctx);
       if (content) {
         await db.query(
           `update memories set content=$1, custom_id=$2, metadata=$3, container_tags=$4, updated_at=$5 where id=$6`,
@@ -245,7 +247,7 @@ export default {
     }
     if (memIdMatch && request.method === "DELETE") {
       const id = decodeURIComponent(memIdMatch[1]);
-      const db = await getDb(env);
+      const db = await getDb(env, _ctx);
       await db.query(`delete from memories where id=$1`, [id]);
       return withCORS(new Response(null, { status: 204 }), request);
     }
@@ -259,7 +261,7 @@ export default {
       const order = (body.order as string) === "asc" ? "asc" : "desc";
       const sort = (body.sort as string) === "createdAt" ? "created_at" : "updated_at";
       const containerTags: string[] | undefined = body.containerTags;
-      const db = await getDb(env);
+      const db = await getDb(env, _ctx);
       const where = containerTags && containerTags.length ? `where container_tags && $1::text[]` : "";
       const params: any[] = containerTags && containerTags.length ? [containerTags] : [];
       const list = await db.query(
@@ -304,7 +306,7 @@ export default {
       const docId = body.docId as string | undefined;
       const containerTags: string[] | undefined = body.containerTags;
       if (!q) return withCORS(new Response(JSON.stringify({ results: [], total: 0, timing: 0 }), { status: 200 }), request);
-      const db = await getDb(env);
+      const db = await getDb(env, _ctx);
       const t0 = Date.now();
       const [qvec] = await embedMany([q], env);
       const whereParts: string[] = [];

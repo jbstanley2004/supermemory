@@ -48,8 +48,15 @@ API (Backend) — Deploy the chat Worker
 2) Database (Hyperdrive or Neon)
 - Provision Postgres (Neon/Supabase/Render) and enable `pgvector`:
   - `CREATE EXTENSION IF NOT EXISTS vector;`
-- Hyperdrive: create a Hyperdrive connection to your Postgres and set `DATABASE_URL` to that connection string; set `DB_DRIVER=pg`.
-- Neon (HTTP): set `DATABASE_URL` to Neon’s HTTP URL; set `DB_DRIVER=neon` (or leave `auto`).
+- Preferred: Cloudflare Hyperdrive binding (connection pooling + caching)
+  1. In the Cloudflare dashboard, create a Hyperdrive configuration pointing at your Postgres.
+  2. In `apps/api/wrangler.jsonc`, ensure the binding exists (already present):
+     ```jsonc
+     "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "<your-hyperdrive-id>" }]
+     ```
+  3. No `DATABASE_URL` is required when the binding is present. The API automatically detects `env.HYPERDRIVE.connectionString` and uses `pg` via `nodejs_compat`.
+- Alternative: Neon HTTP driver
+  - Set `DATABASE_URL` to Neon’s HTTP URL; set `DB_DRIVER=neon` (or leave `auto`).
 
 3) Deploy the API worker
 ```bash

@@ -8,6 +8,10 @@ export type Env = {
   OPENAI_API_KEY: string;
   OPENAI_BASE_URL?: string;
   OPENAI_MODEL?: string;
+  // Optional DB-related env used by other modules
+  HYPERDRIVE?: { connectionString: string };
+  DATABASE_URL?: string;
+  DB_DRIVER?: string;
 };
 
 export class Chat extends AIChatAgent<Env> {
@@ -27,4 +31,3 @@ export class Chat extends AIChatAgent<Env> {
     });
   }
 }
-
