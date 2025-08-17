@@ -1,10 +1,16 @@
-import { routeAgentRequest } from "agents";
-import { generateText } from "ai";
+import { generateText, createDataStreamResponse, streamText } from "ai";
 import { createOpenAIProvider } from "./model";
-import type { Env } from "./agents/chat";
-export { Chat } from "./agents/chat";
 import { ensureSchema, getDb } from "./db";
 import { randomUUID } from "node:crypto";
+
+export type Env = {
+  OPENAI_API_KEY: string;
+  OPENAI_BASE_URL?: string;
+  OPENAI_MODEL?: string;
+  OPENAI_EMBEDDING_MODEL?: string;
+  DATABASE_URL?: string;
+  DB_DRIVER?: string;
+};
 
 function withCORS(res: Response, req: Request): Response {
   const headers = new Headers(res.headers);
@@ -23,26 +29,39 @@ export default {
     // Ensure DB schema exists lazily (first request)
     try {
       await ensureSchema(env);
-    } catch (e) {
-      // ignore schema errors for routes that don't need DB
-    }
+    } catch {}
 
     if (request.method === "OPTIONS") {
       return withCORS(new Response(null, { status: 204 }), request);
     }
 
-    // Title generation endpoint used by the web app
+    // Chat endpoint (AI SDK DefaultChatTransport-compatible)
+    if (url.pathname === "/chat" && request.method === "POST") {
+      const { messages } = await request.json();
+      const { provider, model } = createOpenAIProvider(env);
+      const dataStream = createDataStreamResponse({
+        execute: async (stream) => {
+          const result = streamText({ model, provider, messages });
+          result.mergeIntoDataStream(stream);
+        },
+      });
+      return withCORS(dataStream, request);
+    }
+
+    // Chat title endpoint
     if (url.pathname === "/chat/title" && request.method === "POST") {
       try {
-        const { input } = await request.json().catch(() => ({ input: "" }));
-        const promptText = typeof input === "string" ? input.slice(0, 800) : "Untitled";
-        const openai = createOpenAIProvider(env);
-        const model = env.OPENAI_MODEL || "gpt-4o-mini";
-        const { text } = await generateText({
-          model: openai(model),
-          prompt: `Generate a concise, human-friendly title (max 8 words) for this chat reply:\n\n${promptText}\n\nTitle:`
+        const body = await request.json().catch(() => ({}));
+        const last = Array.isArray(body.messages) ? body.messages[body.messages.length - 1] : null;
+        const text = last?.content || "";
+        const { provider, model } = createOpenAIProvider(env);
+        const out = await generateText({
+          provider,
+          model,
+          prompt: `Generate a short 3-6 word chat title for: ${text}`,
         });
-        return withCORS(new Response(text.trim(), { status: 200 }), request);
+        const title = out.text.trim();
+        return withCORS(new Response(title, { status: 200 }), request);
       } catch (e) {
         return withCORS(new Response("", { status: 500 }), request);
       }
@@ -275,8 +294,8 @@ export default {
       const limit = Math.min(20, Number(body.limit ?? 10));
       const docId = body.docId as string | undefined;
       const containerTags: string[] | undefined = body.containerTags;
-      const db = await getDb(env);
       if (!q) return withCORS(new Response(JSON.stringify({ results: [], total: 0, timing: 0 }), { status: 200 }), request);
+      const db = await getDb(env);
       const t0 = Date.now();
       const [qvec] = await embedMany([q], env);
       const whereParts: string[] = [];
@@ -325,10 +344,6 @@ export default {
         request
       );
     }
-
-    // Route all other requests to the agent (handles /chat streaming via AI SDK format)
-    const routed = await routeAgentRequest(request, env, { prefix: "" });
-    if (routed) return withCORS(routed, request);
 
     return withCORS(new Response("Not found", { status: 404 }), request);
   }
