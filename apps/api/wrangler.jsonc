@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "supermemory-api",
+  "main": "./src/server.ts",
+  "compatibility_date": "2025-07-01",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "4921159684bb488a99d7870706883eab"
+    }
+  ],
+  
+
+  "vars": {
+    "OPENAI_MODEL": "gpt-5-mini",
+    "OPENAI_EMBEDDING_MODEL": "text-embedding-3-large",
+    "DB_DRIVER": "auto"
+  }
+}
