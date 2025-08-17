@@ -38,10 +38,11 @@ export default {
     // Chat endpoint (AI SDK DefaultChatTransport-compatible)
     if (url.pathname === "/chat" && request.method === "POST") {
       const { messages } = await request.json();
-      const { provider, model } = createOpenAIProvider(env);
+      const openai = createOpenAIProvider(env);
+      const modelId = (env as any).OPENAI_MODEL || "gpt-5-mini";
       const dataStream = createDataStreamResponse({
         execute: async (stream) => {
-          const result = streamText({ model, provider, messages });
+          const result = streamText({ model: openai(modelId), messages });
           result.mergeIntoDataStream(stream);
         },
       });
@@ -54,10 +55,10 @@ export default {
         const body = await request.json().catch(() => ({}));
         const last = Array.isArray(body.messages) ? body.messages[body.messages.length - 1] : null;
         const text = last?.content || "";
-        const { provider, model } = createOpenAIProvider(env);
+        const openai = createOpenAIProvider(env);
+        const modelId = (env as any).OPENAI_MODEL || "gpt-5-mini";
         const out = await generateText({
-          provider,
-          model,
+          model: openai(modelId),
           prompt: `Generate a short 3-6 word chat title for: ${text}`,
         });
         const title = out.text.trim();
@@ -81,7 +82,15 @@ export default {
       });
       if (!res.ok) throw new Error(`Embedding error: ${res.status}`);
       const data = await res.json();
-      return data.data.map((d: any) => d.embedding as number[]);
+      const targetDim = 1536;
+      const normalize = (vec: number[], dim = targetDim) => {
+        if (vec.length === dim) return vec;
+        if (vec.length > dim) return vec.slice(0, dim);
+        const out = vec.slice();
+        while (out.length < dim) out.push(0);
+        return out;
+      };
+      return data.data.map((d: any) => normalize(d.embedding as number[]));
     }
 
     // Helpers for chunking text
@@ -136,7 +145,7 @@ export default {
             await db.query(
               `insert into memory_chunks (id, memory_id, chunk_index, content, embedding)
                values ($1,$2,$3,$4,$5::vector)`,
-              [randomUUID(), id, i, chunks[i], vectors[i]]
+              [randomUUID(), id, i, chunks[i], `[${vectors[i].join(",")}]`]
             );
           }
         }
@@ -223,7 +232,7 @@ export default {
           await db.query(
             `insert into memory_chunks (id, memory_id, chunk_index, content, embedding)
              values ($1,$2,$3,$4,$5::vector)`,
-            [randomUUID(), id, i, chunks[i], vectors[i]]
+            [randomUUID(), id, i, chunks[i], `[${vectors[i].join(",")}]`]
           );
         }
       } else {
@@ -299,7 +308,7 @@ export default {
       const t0 = Date.now();
       const [qvec] = await embedMany([q], env);
       const whereParts: string[] = [];
-      const params: any[] = [JSON.stringify(qvec)];
+      const params: any[] = [`[${qvec.join(",")}]`];
       if (docId) {
         whereParts.push(`memory_id = $${params.length + 1}`);
         params.push(docId);

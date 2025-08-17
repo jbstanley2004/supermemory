@@ -13,7 +13,7 @@ export type Env = {
 export class Chat extends AIChatAgent<Env> {
   async onChatMessage(onFinish: StreamTextOnFinishCallback<{}>) {
     const openai = createOpenAIProvider(this.env);
-    const modelId = this.env.OPENAI_MODEL || "gpt-4o-mini";
+    const modelId = this.env.OPENAI_MODEL || "gpt-5-mini";
 
     return createDataStreamResponse({
       execute: async (dataStream) => {
