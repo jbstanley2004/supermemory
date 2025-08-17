@@ -275,7 +275,7 @@ export default {
       const limit = Math.min(20, Number(body.limit ?? 10));
       const docId = body.docId as string | undefined;
       const containerTags: string[] | undefined = body.containerTags;
-      const db = getDb(env);
+      const db = await getDb(env);
       if (!q) return withCORS(new Response(JSON.stringify({ results: [], total: 0, timing: 0 }), { status: 200 }), request);
       const t0 = Date.now();
       const [qvec] = await embedMany([q], env);

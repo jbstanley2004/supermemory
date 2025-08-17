@@ -48,7 +48,7 @@ export async function getDb(env: Env): Promise<Queryable> {
 }
 
 export async function ensureSchema(env: Env) {
-  const db = getDb(env);
+  const db = await getDb(env);
   // Enable extensions and create tables if not exist
   await db.query(`
     create extension if not exists vector;
