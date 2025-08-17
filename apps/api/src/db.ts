@@ -5,6 +5,9 @@ type DBEnv = {
   DB_DRIVER?: string;
 };
 
+// Minimal ExecutionContext surface we need for cleanup without importing CF globals
+type CFContext = { waitUntil: (p: Promise<any>) => void } | undefined;
+
 // Very small DB abstraction that supports either Neon (HTTP) or pg (TCP via nodejs_compat).
 // Recommended in Workers: Neon HTTP driver (`@neondatabase/serverless`).
 // If you insist on Hyperdrive classic Postgres wire, set DB_DRIVER=pg and provide a Hyperdrive connection string.
@@ -15,7 +18,7 @@ export type Queryable = {
 
 let cached: Queryable | null = null;
 
-export async function getDb(env: DBEnv): Promise<Queryable> {
+export async function getDb(env: DBEnv, ctx?: CFContext): Promise<Queryable> {
   if (cached) return cached;
 
   // Prefer Cloudflare Hyperdrive binding when available
@@ -31,7 +34,14 @@ export async function getDb(env: DBEnv): Promise<Queryable> {
           const res = await client.query(text, params);
           return { rows: res.rows ?? [] };
         } finally {
-          try { await client.end(); } catch {}
+          try {
+            // Close the client after the response is returned if ctx available
+            if (ctx && typeof ctx.waitUntil === "function") {
+              ctx.waitUntil(client.end());
+            } else {
+              await client.end();
+            }
+          } catch {}
         }
       },
     };
@@ -72,8 +82,8 @@ export async function getDb(env: DBEnv): Promise<Queryable> {
   return cached;
 }
 
-export async function ensureSchema(env: DBEnv) {
-  const db = await getDb(env);
+export async function ensureSchema(env: DBEnv, ctx?: CFContext) {
+  const db = await getDb(env, ctx);
   // Enable extensions and create tables if not exist
   await db.query(`
     create extension if not exists vector;
