@@ -6,10 +6,11 @@ compatibility_flags = ["nodejs_compat"]
 [env.production]
 name = "supermemory-api-production"
 
-# Hyperdrive configuration for PostgreSQL
-[[hyperdrive]]
+# D1 Database configuration
+[[d1_databases]]
 binding = "DB"
-id = "HYPERDRIVE_ID_PLACEHOLDER"
+database_name = "supermemory"
+database_id = "D1_DATABASE_ID_PLACEHOLDER"
 
 # AI binding for embeddings
 [ai]
@@ -36,7 +37,6 @@ NODE_ENV = "production"
 BETTER_AUTH_URL = "https://api-supermemory.terragon.workers.dev"
 
 # Secrets to be set via wrangler secret
-# wrangler secret put DATABASE_URL
 # wrangler secret put BETTER_AUTH_SECRET
 # wrangler secret put OPENAI_API_KEY
 # wrangler secret put RESEND_API_KEY

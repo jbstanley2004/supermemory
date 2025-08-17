@@ -4,14 +4,14 @@ import { openAPI } from 'better-auth/plugins'
 import { organization } from 'better-auth/plugins'
 import type { Env } from '../index'
 import { getDb } from '../db'
-import * as schema from '../db/schema'
+import * as schema from '../db/schema-d1'
 
 export function getAuth(env: Env) {
   const db = getDb(env)
   
   return betterAuth({
     database: drizzleAdapter(db, {
-      provider: 'pg',
+      provider: 'sqlite',
       schema: {
         user: schema.users,
         session: schema.sessions,

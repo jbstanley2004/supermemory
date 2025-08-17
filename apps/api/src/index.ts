@@ -5,8 +5,8 @@ import { compress } from 'hono/compress'
 import { secureHeaders } from 'hono/secure-headers'
 import { timing } from 'hono/timing'
 
-import { memoriesRouter } from './routes/memories'
-import { searchRouter } from './routes/search'
+import { memoriesRouter } from './routes/memories-d1'
+import { searchRouter } from './routes/search-d1'
 import { connectionsRouter } from './routes/connections'
 import { settingsRouter } from './routes/settings'
 import { analyticsRouter } from './routes/analytics'
@@ -16,14 +16,13 @@ import { chatRouter } from './routes/chat'
 
 export interface Env {
   // Bindings
-  DB: Hyperdrive
+  DB: D1Database
   AI: any
   KV: KVNamespace
   R2: R2Bucket
   VECTORIZE: any
   
-  // Environment variables
-  DATABASE_URL: string
+  // Environment variables (no longer need DATABASE_URL for D1)
   BETTER_AUTH_SECRET: string
   BETTER_AUTH_URL: string
   OPENAI_API_KEY: string

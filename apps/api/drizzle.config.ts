@@ -1,10 +1,13 @@
 import type { Config } from 'drizzle-kit'
 
 export default {
-  schema: './src/db/schema.ts',
+  schema: './src/db/schema-d1.ts',
   out: './migrations',
-  dialect: 'postgresql',
+  dialect: 'sqlite',
+  driver: 'd1-http',
   dbCredentials: {
-    url: process.env.DATABASE_URL!,
+    accountId: process.env.CLOUDFLARE_ACCOUNT_ID!,
+    databaseId: process.env.D1_DATABASE_ID || 'D1_DATABASE_ID_PLACEHOLDER',
+    token: process.env.CLOUDFLARE_API_TOKEN!,
   },
 } satisfies Config

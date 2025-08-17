@@ -174,15 +174,18 @@ export async function processMemory(
       const chunkId = nanoid()
       const embedding = await generateEmbedding(chunkContent, env)
       
-      // Store in database
+      // Generate content hash
+      const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(chunkContent))
+      const contentHash = Array.from(new Uint8Array(hashBuffer))
+        .map(b => b.toString(16).padStart(2, '0')).join('')
+      
+      // Store in D1 database
       await db.insert(schema.memoryChunks).values({
         id: chunkId,
         documentId,
         userId,
         content: chunkContent,
-        contentHash: await crypto.subtle.digest('SHA-256', new TextEncoder().encode(chunkContent))
-          .then(buf => Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')),
-        embedding,
+        contentHash,
         position: index,
         tokenCount: Math.ceil(chunkContent.length / 4),
       })
