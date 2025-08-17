@@ -1,6 +1,9 @@
 Supermemory — Cloudflare Deployment (Frontend + API)
 
-This repo contains the Next.js web app under `apps/web` and a lightweight Cloudflare Workers API under `apps/api` implementing chat via Cloudflare Agents (Durable Objects) and OpenAI (AI Gateway-ready).
+This repo contains the Next.js web app under `apps/web` and a Cloudflare Workers API under `apps/api` implementing:
+- Chat via Cloudflare Agents (Durable Objects) + OpenAI (AI Gateway-ready)
+- v3/memories CRUD + /v3/memories/file upload (text)
+- v3/search using Postgres + pgvector via Hyperdrive or Neon
 
 Use this guide to deploy the web app to Cloudflare now, and prepare for deploying the API once its code or enterprise deployment package is available.
 
@@ -42,13 +45,19 @@ API (Backend) — Deploy the chat Worker
   - e.g. `https://gateway.ai.cloudflare.com/v1/<ACCOUNT>/<GATEWAY_NAME>/openai`
 - Optional: set `OPENAI_MODEL` (default `gpt-4o-mini`)
 
-2) Deploy the API worker
+2) Database (Hyperdrive or Neon)
+- Provision Postgres (Neon/Supabase/Render) and enable `pgvector`:
+  - `CREATE EXTENSION IF NOT EXISTS vector;`
+- Hyperdrive: create a Hyperdrive connection to your Postgres and set `DATABASE_URL` to that connection string; set `DB_DRIVER=pg`.
+- Neon (HTTP): set `DATABASE_URL` to Neon’s HTTP URL; set `DB_DRIVER=neon` (or leave `auto`).
+
+3) Deploy the API worker
 ```bash
 cd apps/api
 wrangler deploy
 ```
 
-3) Point the web app to your API
+4) Point the web app to your API
 - Set `apps/web/.env` → `NEXT_PUBLIC_BACKEND_URL=https://<your-api-subdomain>.workers.dev` (or your custom domain)
 - Redeploy the web: `cd apps/web && bunx opennextjs-cloudflare build && bunx opennextjs-cloudflare deploy`
 
@@ -56,6 +65,8 @@ Notes
 - The API provides:
   - `POST /chat` (AI SDK-compatible streaming chat)
   - `POST /chat/title` (short title generation)
+  - `POST /v3/memories`, `POST /v3/memories/file`, `GET/PATCH/DELETE /v3/memories/:id`, `POST /v3/memories/list`
+  - `POST /v3/search` (pgvector cosine similarity)
 - Durable Objects migration tag `v1` is included; Wrangler will handle DO storage.
 - CORS is permissive by default; tighten to your app domain(s) as needed.
 
